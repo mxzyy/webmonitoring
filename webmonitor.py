@@ -6,17 +6,22 @@ import argparse
 from datetime import datetime
 
 sites = []
-bot_token = ""
-chat_id = ""  
+#bot_token = "6269039385:AAFG8_BkyqVHKTIsq6qLgY1WeBMF_96z8xo"
+#chat_id = "-4244389630"
+bot_token = '7089125783:AAG62y8_V7Hm-MIn7onEGfB-_Bzy-XzbbMY'
+chat_id = '1514282558'
 file = "status.json"
 logging.basicConfig(filename='webmonitor.log', filemode='a', format='%(asctime)s - %(name)s - %(message)s', level=logging.INFO)
 
 
-def readfile(file: str):
-  with open(file, 'r') as f:
-    rawdata = f.readlines()
-    data = [line.strip() for line in rawdata]
-    return data
+def read_file(file: str):
+    try:
+        with open(file, 'r') as f:
+            readlines = f.readlines()
+            lists = [check_url(x.strip()) for x in readlines]
+            return lists
+    except Exception as e:
+        print(e)
 
 def check_file_handler():
   try:
@@ -49,13 +54,33 @@ def read_site_status(sites: str):
   try:
     with open(file, 'r') as f:
       loadjson = json.load(f)
-      status = loadjson[sites]
+      status = loadjson[sites]['Status']
       return status
   except:
     logging.info(f"{sites} error cannot read status not found")
     return "Err"
     
-def send_notification(message, status, prev_status):
+def write_json(sites: str, lists: list):
+    try:
+        with open(file, 'r') as f:
+          load = json.load(f)
+        with open(file, 'w') as f:
+          load[sites] = lists
+          json.dump(load, f, indent=4) 
+          #print(load['sites']['status'])
+    except Exception as e:
+        print(e)
+
+def read_json(sites: str):
+   try:
+      with open(file, 'r') as f:
+         load = json.load(f)
+         lists = load[sites]
+         return lists
+   except Exception as e:
+      print(e)
+
+def send_notification(message, status, prev_status, status_code):
   now = datetime.now()
   datestr = now.strftime("%d/%m/%Y-%H:%M:%S")
   try:
@@ -66,10 +91,14 @@ def send_notification(message, status, prev_status):
       elif 'http://' in message:
         message = message[7:]
       if status == 'Live':
+        last_status = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+        write_json(message, {"Status": status,"Last Live": last_status})
         status = status + ' 🟩'
       else:
+        last_status = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+        write_json(message, {"Status": status,"Last Down": last_status})
         status = status + ' ❌'
-      bot.send_message(chat_id, f"[{datestr}] Diinfokan Web {message:10}  Status: {status}")
+      bot.send_message(chat_id, f"[{datestr}] Diinfokan Web {message:100} Status: {status:5} HTTP_Status_Code: [{status_code}] Last Live: {read_json(message)['Last Live']}")
       logging.info("Send message to Bot")
   except Exception as e:
     #print(f"Error sending notification: {e}")
@@ -82,21 +111,24 @@ def check_website(url):
       logging.info(f"{url} is live")
       status = "Live"
       prev_status = read_site_status(url)
-      write_site_status(url, status)
-      send_notification(url, status, prev_status)
+      send_notification(url, status, prev_status, response.status_code)
       logging.info(f"{url} is sending requests")
     else:
       logging.info(f"{url} is down")
       status = "Down"
       prev_status = read_site_status(url)
-      write_site_status(url, status)
-      send_notification(url, status, prev_status)
+      send_notification(url, status, prev_status, response.status_code)
   except requests.exceptions.RequestException:
     logging.info(f"{url} is down Network Error")
     status = "Down (Network Error)"
     prev_status = read_site_status(url)
     write_site_status(url ,status)
     send_notification(url, status, prev_status)
+
+def check_url(url: str):
+    if not ('https' in url or 'http' in url):
+        url = 'https://' + url
+        return url
 
 if __name__ == "__main__":
   logging.info("Program started.")
@@ -108,9 +140,10 @@ if __name__ == "__main__":
   websites = args.domain
   files = args.file
   args = parser.parse_args()
-  for website in websites:
-    if not ('https' in website[0] or 'http' in website[0]):
-      website = 'https://' + website[0]
-    else:
-      website = website[0]
-    check_website(website)
+  for i in websites:
+    sites.append(check_url(i[0]))
+    #print(sites)
+  for j in files:
+    sites.extend(read_file(j[0]))
+  for k in sites:
+    check_website(k)
