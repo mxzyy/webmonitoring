@@ -6,10 +6,8 @@ import argparse
 from datetime import datetime
 
 sites = []
-#bot_token = '7089125783:AAG62y8_V7Hm-MIn7onEGfB-_Bzy-XzbbMY'
-#chat_id = '1514282558'
-bot_token = "6269039385:AAFG8_BkyqVHKTIsq6qLgY1WeBMF_96z8xo"
-chat_id = "-4244389630"
+bot_token = ''
+chat_id = ''
 file = "webmonitoring/status.json"
 logging.basicConfig(filename='webmonitor.log', filemode='a', format='%(asctime)s - %(name)s - %(message)s', level=logging.INFO)
 
