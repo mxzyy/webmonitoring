@@ -6,9 +6,11 @@ import argparse
 from datetime import datetime
 
 sites = []
-bot_token = ''
-chat_id = ''
-file = "status.json"
+#bot_token = '7089125783:AAG62y8_V7Hm-MIn7onEGfB-_Bzy-XzbbMY'
+#chat_id = '1514282558'
+bot_token = "6269039385:AAFG8_BkyqVHKTIsq6qLgY1WeBMF_96z8xo"
+chat_id = "-4244389630"
+file = "webmonitoring/status.json"
 logging.basicConfig(filename='webmonitor.log', filemode='a', format='%(asctime)s - %(name)s - %(message)s', level=logging.INFO)
 
 
@@ -35,20 +37,11 @@ def check_file_handler():
     logging.error(f"file {file} already exist.")
     return False
 
-def write_site_status(sites: str, status: str):
-  try:
-    with open(file, 'r') as data:
-      loadjson = json.load(data)
-    with open(file, 'w') as f:
-      loadjson[sites] = status
-      json.dump(loadjson, f, indent=4)
-      #print(f"{sites} updated with {status}")
-      logging.info(f"{sites} updated with status : {status}")
-  except:
-    #print("error write status")
-    logging.error(f"{sites} error cannot write status")
-
 def read_site_status(sites: str):
+  if 'https://' in sites:
+    sites = sites[8:]
+  elif 'http://' in sites:
+    sites = sites[7:]
   try:
     with open(file, 'r') as f:
       loadjson = json.load(f)
@@ -56,15 +49,15 @@ def read_site_status(sites: str):
       return status
   except:
     logging.info(f"{sites} error cannot read status not found")
-    return "Err"
-    
+    return "None"
+
 def write_json(sites: str, lists: list):
     try:
         with open(file, 'r') as f:
           load = json.load(f)
         with open(file, 'w') as f:
           load[sites] = lists
-          json.dump(load, f, indent=4) 
+          json.dump(load, f, indent=4)
           #print(load['sites']['status'])
     except Exception as e:
         print(e)
@@ -92,11 +85,12 @@ def send_notification(message, status, prev_status, status_code):
         last_status = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
         write_json(message, {"Status": status,"Last Live": last_status})
         status = status + ' 🟩'
+        bot.send_message(chat_id, f"[{datestr}] Diinfokan Web {message:100} Status: {status:5} HTTP_Status_Code: [{status_code}] Last Down: {read_json(message)['Last Down']}")
       else:
         last_status = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
         write_json(message, {"Status": status,"Last Down": last_status})
         status = status + ' ❌'
-      bot.send_message(chat_id, f"[{datestr}] Diinfokan Web {message:100} Status: {status:5} HTTP_Status_Code: [{status_code}] Last Live: {read_json(message)['Last Live']}")
+        bot.send_message(chat_id, f"[{datestr}] Diinfokan Web {message:100} Status: {status:5} HTTP_Status_Code: [{status_code}] Last Live: {read_json(message)['Last Live']} ")
       logging.info("Send message to Bot")
   except Exception as e:
     #print(f"Error sending notification: {e}")
@@ -117,12 +111,10 @@ def check_website(url):
       prev_status = read_site_status(url)
       send_notification(url, status, prev_status, response.status_code)
   except requests.exceptions.RequestException:
-    response = requests.get(url)
     logging.info(f"{url} is down Network Error")
     status = "Down (Network Error)"
     prev_status = read_site_status(url)
-    write_site_status(url ,status)
-    send_notification(url, status, prev_status, response.status_code)
+    send_notification(url, status, prev_status, 'UNREACHABLE')
 
 def check_url(url: str):
     if not ('https' in url or 'http' in url):
