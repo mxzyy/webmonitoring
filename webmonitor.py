@@ -6,10 +6,8 @@ import argparse
 from datetime import datetime
 
 sites = []
-#bot_token = "6269039385:AAFG8_BkyqVHKTIsq6qLgY1WeBMF_96z8xo"
-#chat_id = "-4244389630"
-bot_token = '7089125783:AAG62y8_V7Hm-MIn7onEGfB-_Bzy-XzbbMY'
-chat_id = '1514282558'
+bot_token = ''
+chat_id = ''
 file = "status.json"
 logging.basicConfig(filename='webmonitor.log', filemode='a', format='%(asctime)s - %(name)s - %(message)s', level=logging.INFO)
 
@@ -123,7 +121,7 @@ def check_website(url):
     status = "Down (Network Error)"
     prev_status = read_site_status(url)
     write_site_status(url ,status)
-    send_notification(url, status, prev_status)
+    send_notification(url, status, '300')
 
 def check_url(url: str):
     if not ('https' in url or 'http' in url):
@@ -140,10 +138,20 @@ if __name__ == "__main__":
   websites = args.domain
   files = args.file
   args = parser.parse_args()
-  for i in websites:
-    sites.append(check_url(i[0]))
-    #print(sites)
-  for j in files:
-    sites.extend(read_file(j[0]))
+  try:
+    for i in websites:
+      sites.append(check_url(i[0]))
+  except:
+    print("Tidak ada domain yang diinput, mencoba membaca files")
+    pass
+
+  try:
+    for j in files:
+      sites.extend(read_file(j[0]))
+  except:
+    print("Tidak ada file yang diinput.")
+    pass
+
   for k in sites:
+    #print(k)
     check_website(k)
