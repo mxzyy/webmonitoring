@@ -117,15 +117,18 @@ def check_website(url):
       prev_status = read_site_status(url)
       send_notification(url, status, prev_status, response.status_code)
   except requests.exceptions.RequestException:
+    response = requests.get(url)
     logging.info(f"{url} is down Network Error")
     status = "Down (Network Error)"
     prev_status = read_site_status(url)
     write_site_status(url ,status)
-    send_notification(url, status, '300')
+    send_notification(url, status, prev_status, response.status_code)
 
 def check_url(url: str):
     if not ('https' in url or 'http' in url):
         url = 'https://' + url
+        return url
+    else:
         return url
 
 if __name__ == "__main__":
